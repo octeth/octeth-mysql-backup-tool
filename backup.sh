@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail  # Exit immediately if a command exits with a non-zero status, including in pipelines
+set -euo pipefail  # Exit immediately if a command exits with a non-zero status
 
 # Load configuration variables from .env file
 ENV_FILE="$(dirname "$0")/.env"
@@ -21,7 +21,7 @@ DAYMONTH=$(date +%d)
 mkdir -p "$BACKUP_DIR"
 
 # Check if MySQL credentials are provided
-if [[ -z "$MYSQL_USER" || -z "$MYSQL_PASSWORD" ]]; then
+if [[ -z "${MYSQL_USER-}" || -z "${MYSQL_PASSWORD-}" ]]; then
     echo "MYSQL_USER and MYSQL_PASSWORD must be set in the .env file."
     exit 1
 fi

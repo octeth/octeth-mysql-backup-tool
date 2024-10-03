@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail  # Exit immediately if a command exits with a non-zero status, including in pipelines
+set -euo pipefail  # Exit immediately if a command exits with a non-zero status
 
 # Load configuration variables from .env file
 ENV_FILE="$(dirname "$0")/.env"
