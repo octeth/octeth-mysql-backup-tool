@@ -70,7 +70,7 @@ docker run --rm \
 
 # Adjust ownership
 echo "Adjusting file ownership..."
-chown -R "${MYSQL_USER:-mysql}":"${MYSQL_GROUP:-mysql}" "$MYSQL_DATA_DIR"
+chown -R "${MYSQL_FILESYSTEM_USER:-mysql}":"${MYSQL_FILESYSTEM_GROUP:-mysql}" "$MYSQL_DATA_DIR"
 
 # Start MySQL service
 echo "Starting MySQL service..."

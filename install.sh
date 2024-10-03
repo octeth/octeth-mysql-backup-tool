@@ -32,7 +32,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install necessary packages and Percona XtraBackup
 RUN apt-get update && \
-    apt-get install -y curl wget lsb-release gnupg2 && \
+    apt-get install -y mysql-client curl wget lsb-release gnupg2 && \
     wget https://repo.percona.com/apt/percona-release_latest.generic_all.deb && \
     dpkg -i percona-release_latest.generic_all.deb && \
     percona-release setup ps57 && \
