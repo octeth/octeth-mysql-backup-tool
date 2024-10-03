@@ -30,31 +30,39 @@ docker run --rm \
 
 # Check backup success
 if [ $? -eq 0 ]; then
-    echo "Backup was successful, proceeding with upload..."
+    echo "Backup was successful."
 
-    # Determine the S3 path based on the date
-    if [[ "$DAYMONTH" == "01" || "$DAYMONTH" == "11" || "$DAYMONTH" == "21" || "$DAYMONTH" == "31" ]]; then
-        S3_PATH="$S3_BUCKET/$LONGTERM/$FILENAME"
+    # Check if AWS credentials are provided
+    if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_DEFAULT_REGION" ]]; then
+        echo "AWS credentials detected. Proceeding with upload..."
+
+        # Determine the S3 path based on the date
+        if [[ "$DAYMONTH" == "01" || "$DAYMONTH" == "11" || "$DAYMONTH" == "21" || "$DAYMONTH" == "31" ]]; then
+            S3_PATH="$S3_BUCKET/$LONGTERM/$FILENAME"
+        else
+            S3_PATH="$S3_BUCKET/$SHORTTERM/$DAYWEEK/$FILENAME"
+        fi
+
+        # Upload to AWS S3 using Docker
+        echo "Uploading backup to S3..."
+        docker run --rm \
+            -v "$BACKUP_DIR":/backup \
+            -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+            -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+            -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+            amazon/aws-cli \
+            s3 cp "/backup/$FILENAME" "$S3_PATH"
+
+        echo "Backup uploaded to $S3_PATH"
+
+        # Cleanup local backup file
+        rm -f "$BACKUP_DIR/$FILENAME"
+        echo "Local backup file cleaned up."
     else
-        S3_PATH="$S3_BUCKET/$SHORTTERM/$DAYWEEK/$FILENAME"
+        echo "AWS credentials not set. Skipping S3 upload."
+        echo "Backup file is located at: $BACKUP_DIR/$FILENAME"
     fi
-
-    # Upload to AWS S3 using Docker
-    echo "Uploading backup to S3..."
-    docker run --rm \
-        -v "$BACKUP_DIR":/backup \
-        -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-        -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-        -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
-        amazon/aws-cli \
-        s3 cp "/backup/$FILENAME" "$S3_PATH"
-
-    echo "Backup uploaded to $S3_PATH"
 else
     echo "Backup failed."
     exit 1
 fi
-
-# Cleanup local backup file
-rm -f "$BACKUP_DIR/$FILENAME"
-echo "Local backup file cleaned up."

@@ -1,6 +1,6 @@
 # MySQL Backup and Restore Scripts using Percona XtraBackup and AWS S3
 
-This repository contains a set of Bash scripts designed to perform backups and restores of a MySQL 5.7 database using Percona XtraBackup. The backups are compressed, stored locally, and uploaded to AWS S3 for long-term and short-term storage. The scripts are compatible with Ubuntu 22.04 or newer versions and leverage Docker to run Percona XtraBackup 2.4 and AWS CLI.
+This repository contains a set of Bash scripts designed to perform backups and restores of a MySQL 5.7 database using Percona XtraBackup. The backups are compressed and stored locally, with the option to upload them to AWS S3 for long-term and short-term storage. The scripts are compatible with Ubuntu 22.04 or newer versions and leverage Docker to run Percona XtraBackup 2.4 and AWS CLI.
 
 This tool is built specifically for [Octeth Email Marketing Software](https://octeth.com/).
 
@@ -86,8 +86,9 @@ sudo ./backup.sh
 The script will:
 
 - Create a compressed backup of your MySQL data directory using Percona XtraBackup within a Docker container.
-- Upload the backup to AWS S3 using the AWS CLI Docker image, organizing it into long-term or short-term storage based on the date.
-- Clean up the local backup file after upload.
+- **Optionally** upload the backup to AWS S3 using the AWS CLI Docker image if AWS credentials are provided.
+- If AWS credentials are not set, the backup will be stored locally.
+- Inform you of the backup file's location if not uploaded to S3.
 
 ### Restoring from a Backup
 
@@ -104,7 +105,8 @@ To restore your database from a backup, run the `restore.sh` script.
 
 The script will:
 
-- Download the specified backup from AWS S3 using the AWS CLI Docker image.
+- **Optionally** download the specified backup from AWS S3 if AWS credentials are provided.
+- If AWS credentials are not set, it will look for the backup file in the local backup directory.
 - Decompress and extract the backup files using Percona XtraBackup within a Docker container.
 - Stop the MySQL service or container.
 - Clean the existing MySQL data directory.
@@ -134,15 +136,17 @@ This script performs the backup process:
 - **Generates Filenames**: Uses date-based variables for naming the backup files.
 - **Creates Backup Directory**: Ensures the local backup directory exists.
 - **Performs Backup**: Runs Percona XtraBackup inside a Docker container to create a compressed backup.
-- **Uploads to S3**: Uses the AWS CLI Docker image to upload the backup to AWS S3.
-- **Cleans Up**: Removes the local backup file after successful upload.
+- **Uploads to S3 (Optional)**: If AWS credentials are provided, uses the AWS CLI Docker image to upload the backup to AWS S3.
+- **Local Backup Retention**: If AWS credentials are not set, the backup remains in the local directory.
+- **Cleans Up**: Removes the local backup file after successful upload to S3.
 
 ### restore.sh
 
 This script restores the database from a backup:
 
 - **Loads Configuration**: Reads variables from the `.env` file.
-- **Downloads Backup**: Uses the AWS CLI Docker image to download the specified backup from S3.
+- **Downloads Backup (Optional)**: If AWS credentials are provided, uses the AWS CLI Docker image to download the specified backup from S3.
+- **Local Backup Usage**: If AWS credentials are not set, the script uses the backup file from the local backup directory.
 - **Prepares Backup**: Decompresses and extracts the backup using Percona XtraBackup inside a Docker container.
 - **Stops MySQL**: Stops the MySQL service or Docker container.
 - **Cleans Data Directory**: Removes existing data in the MySQL data directory.
@@ -170,10 +174,10 @@ DATA_DIR="/var/lib/mysql"        # Path to your MySQL data directory
 BACKUP_DIR="/root/mysql_backups" # Local directory to store backups
 MYSQL_DATA_DIR="/var/lib/mysql"  # MySQL data directory for restore
 
-# AWS Credentials (avoid hardcoding if possible)
-AWS_ACCESS_KEY_ID="your-access-key-id"
-AWS_SECRET_ACCESS_KEY="your-secret-access-key"
-AWS_DEFAULT_REGION="your-region"
+# AWS Credentials (leave empty if not using AWS S3)
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+AWS_DEFAULT_REGION=""
 
 # Backup Storage Configuration
 LONGTERM="longterm"    # S3 folder for long-term backups
@@ -185,9 +189,15 @@ MYSQL_CONTAINER_NAME=""  # Set this if MySQL is running in a Docker container
 
 **Notes:**
 
-- Replace the placeholder values with your actual configuration.
-- If your MySQL data directory or Docker container name differs, update the `DATA_DIR`, `MYSQL_DATA_DIR`, and `MYSQL_CONTAINER_NAME` variables accordingly.
-- Be cautious with sensitive information. Avoid committing the `.env` file to version control.
+- **AWS Credentials**:
+  - If `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_DEFAULT_REGION` are set to empty values, the scripts will skip uploading backups to S3.
+  - When restoring, if AWS credentials are not provided, the script will look for the backup file in the local backup directory.
+- **Local Backups**:
+  - Ensure that your `BACKUP_DIR` has sufficient storage space and is secured appropriately.
+- **MySQL Data Directory**:
+  - Update the `DATA_DIR` and `MYSQL_DATA_DIR` variables if your MySQL data directory is located elsewhere.
+- **MySQL Container**:
+  - If your MySQL server is running inside a Docker container, set `MYSQL_CONTAINER_NAME` to the container's name.
 
 ---
 
@@ -211,7 +221,11 @@ To automate the backup process, you can schedule the `backup.sh` script using `c
 
 3. Save and exit the crontab editor.
 
-**Note**: Ensure that the script paths are correct and that the user running the cron job has sufficient permissions to execute the script and access Docker.
+**Note**:
+
+- Ensure that the script paths are correct.
+- The user running the cron job must have sufficient permissions to execute the script and access Docker.
+- Redirecting output to a log file (`>> /var/log/mysql_backup.log 2>&1`) helps in monitoring the backup process.
 
 ---
 
@@ -226,11 +240,21 @@ To automate the backup process, you can schedule the `backup.sh` script using `c
   chmod -R 700 /root/mysql_backups
   ```
 
-- **AWS Credentials**: Consider using AWS IAM roles, AWS CLI configuration files, or environment variables instead of hardcoding credentials in the `.env` file.
-- **Data Encryption**: For an additional layer of security, consider encrypting your backups before uploading them to S3. AWS S3 supports server-side encryption.
-- **Docker Security**: Ensure that Docker is securely configured and that only authorized users can execute Docker commands.
-- **Logging**: Redirect script output to log files and secure them appropriately.
-- **Access Control**: Limit access to the server and ensure only trusted personnel can run the scripts.
+- **AWS Credentials**:
+  - If possible, use AWS IAM roles, AWS CLI configuration files, or environment variables instead of hardcoding credentials in the `.env` file.
+  - When AWS credentials are not set, backups will not be uploaded to S3; ensure that local backups are secured and managed appropriately.
+- **Data Encryption**:
+  - For an additional layer of security, consider encrypting your backups before uploading them to S3. AWS S3 supports server-side encryption.
+  - Encrypt local backups if they contain sensitive data and are stored on the server.
+- **Docker Security**:
+  - Ensure that Docker is securely configured and that only authorized users can execute Docker commands.
+- **Logging**:
+  - Redirect script output to log files and secure them appropriately.
+- **Access Control**:
+  - Limit access to the server and ensure only trusted personnel can run the scripts.
+- **Backup Retention Policy**:
+  - Implement a policy for how long local backups are retained if not uploading to S3.
+  - Regularly monitor and clean up old backups to manage disk space.
 
 ---
 
@@ -242,9 +266,11 @@ To automate the backup process, you can schedule the `backup.sh` script using `c
 - **AWS S3 Upload Fails**:
   - Verify that AWS credentials are correctly set in the `.env` file.
   - Ensure the S3 bucket name and path are correct.
+  - If AWS credentials are not set, the script will skip the upload.
 - **Restore Process Issues**:
   - Confirm that the backup file name provided to `restore.sh` matches the backup you intend to restore.
   - Ensure that the MySQL service or container is properly stopped before restoring.
+  - If AWS credentials are not set, ensure the backup file exists in the local backup directory.
 - **Permission Errors**:
   - Ensure you run the scripts with sufficient privileges (`sudo` may be required).
   - Verify that the `chown` command in `restore.sh` points to the correct user and group (`mysql:mysql`).

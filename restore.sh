@@ -21,15 +21,25 @@ if [ -z "$1" ]; then
 fi
 FILENAME="$1"
 
-# Download the backup from S3 using Docker
-echo "Downloading the backup from S3..."
-docker run --rm \
-    -v "$BACKUP_DIR":/backup \
-    -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-    -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-    -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
-    amazon/aws-cli \
-    s3 cp "$S3_BUCKET/$FILENAME" "/backup/$FILENAME"
+# Download the backup from S3 using Docker, if AWS credentials are provided
+if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_DEFAULT_REGION" ]]; then
+    echo "AWS credentials detected. Downloading the backup from S3..."
+    docker run --rm \
+        -v "$BACKUP_DIR":/backup \
+        -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+        -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+        -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+        amazon/aws-cli \
+        s3 cp "$S3_BUCKET/$FILENAME" "/backup/$FILENAME"
+else
+    echo "AWS credentials not set. Skipping S3 download."
+    if [ ! -f "$BACKUP_DIR/$FILENAME" ]; then
+        echo "Backup file not found in $BACKUP_DIR. Please place the backup file in the directory or provide AWS credentials."
+        exit 1
+    else
+        echo "Using existing backup file in $BACKUP_DIR."
+    fi
+fi
 
 # Decompress and extract the backup using Docker
 echo "Decompressing and extracting the backup..."
