@@ -1,10 +1,10 @@
 #!/bin/bash
 
-set -e  # Exit immediately if a command exits with a non-zero status
+set -euo pipefail  # Exit immediately if a command exits with a non-zero status, including in pipelines
 
 # Load configuration variables from .env file
 ENV_FILE="$(dirname "$0")/.env"
-if [ -f "$ENV_FILE" ]; then
+if [[ -f "$ENV_FILE" ]]; then
     source "$ENV_FILE"
 else
     echo "Configuration file .env not found!"
@@ -15,14 +15,14 @@ fi
 mkdir -p "$BACKUP_DIR"
 
 # Specify the exact backup file name to restore (pass as an argument)
-if [ -z "$1" ]; then
+if [[ -z "${1-}" ]]; then
     echo "Usage: $0 <backup_filename>"
     exit 1
 fi
 FILENAME="$1"
 
 # Download the backup from S3 using Docker, if AWS credentials are provided
-if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_DEFAULT_REGION" ]]; then
+if [[ -n "${AWS_ACCESS_KEY_ID-}" && -n "${AWS_SECRET_ACCESS_KEY-}" && -n "${AWS_DEFAULT_REGION-}" ]]; then
     echo "AWS credentials detected. Downloading the backup from S3..."
     docker run --rm \
         -v "$BACKUP_DIR":/backup \
@@ -33,7 +33,7 @@ if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_DEFAULT
         s3 cp "$S3_BUCKET/$FILENAME" "/backup/$FILENAME"
 else
     echo "AWS credentials not set. Skipping S3 download."
-    if [ ! -f "$BACKUP_DIR/$FILENAME" ]; then
+    if [[ ! -f "$BACKUP_DIR/$FILENAME" ]]; then
         echo "Backup file not found in $BACKUP_DIR. Please place the backup file in the directory or provide AWS credentials."
         exit 1
     else
@@ -50,7 +50,7 @@ docker run --rm \
 
 # Stop MySQL service
 echo "Stopping MySQL service..."
-if [ -n "$MYSQL_CONTAINER_NAME" ]; then
+if [[ -n "${MYSQL_CONTAINER_NAME-}" ]]; then
     docker stop "$MYSQL_CONTAINER_NAME"
 else
     systemctl stop mysql
@@ -70,11 +70,11 @@ docker run --rm \
 
 # Adjust ownership
 echo "Adjusting file ownership..."
-chown -R mysql:mysql "$MYSQL_DATA_DIR"
+chown -R "$MYSQL_USER":"$MYSQL_GROUP" "$MYSQL_DATA_DIR"
 
 # Start MySQL service
 echo "Starting MySQL service..."
-if [ -n "$MYSQL_CONTAINER_NAME" ]; then
+if [[ -n "${MYSQL_CONTAINER_NAME-}" ]]; then
     docker start "$MYSQL_CONTAINER_NAME"
 else
     systemctl start mysql
