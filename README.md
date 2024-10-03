@@ -2,6 +2,8 @@
 
 This repository contains a set of Bash scripts designed to perform backups and restores of a MySQL 5.7 database using Percona XtraBackup. The backups are compressed, stored locally, and uploaded to AWS S3 for long-term and short-term storage. The scripts are compatible with Ubuntu 22.04 or newer versions and leverage Docker to run Percona XtraBackup 2.4.
 
+This tool is built specifically for [Octeth Email Marketing Software](https://octeth.com/].
+
 ---
 
 ## Table of Contents
