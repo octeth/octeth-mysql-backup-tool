@@ -14,24 +14,41 @@ fi
 # Ensure the backup directory exists
 mkdir -p "$BACKUP_DIR"
 
-# Specify the exact backup file name to restore
-FILENAME="innodb_backup_specific-date.xbstream.gz"  # Update this with the actual file name
+# Specify the exact backup file name to restore (pass as an argument)
+if [ -z "$1" ]; then
+    echo "Usage: $0 <backup_filename>"
+    exit 1
+fi
+FILENAME="$1"
 
-# Download the backup from S3
+# Download the backup from S3 using Docker
 echo "Downloading the backup from S3..."
-aws s3 cp "$S3_BUCKET/path-to-your-backup/$FILENAME" "$BACKUP_DIR/$FILENAME"
+docker run --rm \
+    -v "$BACKUP_DIR":/backup \
+    -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+    -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+    -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+    amazon/aws-cli \
+    s3 cp "$S3_BUCKET/$FILENAME" "/backup/$FILENAME"
 
-# Decompress and extract the backup
+# Decompress and extract the backup using Docker
 echo "Decompressing and extracting the backup..."
-pigz -dc "$BACKUP_DIR/$FILENAME" | xbstream -x -C "$BACKUP_DIR"
+docker run --rm \
+    -v "$BACKUP_DIR":/backup \
+    percona/percona-xtrabackup:2.4 \
+    bash -c "cd /backup && gzip -d $FILENAME && xbstream -x < ${FILENAME%.gz}"
 
 # Stop MySQL service
 echo "Stopping MySQL service..."
-docker stop mysql_container  # Replace with your MySQL Docker container name
+if [ -n "$MYSQL_CONTAINER_NAME" ]; then
+    docker stop "$MYSQL_CONTAINER_NAME"
+else
+    systemctl stop mysql
+fi
 
 # Clean existing data directory
 echo "Cleaning existing MySQL data directory..."
-rm -rf "$MYSQL_DATA_DIR/*"
+rm -rf "$MYSQL_DATA_DIR"/*
 
 # Restore the backup using Docker
 echo "Restoring the backup..."
@@ -47,8 +64,12 @@ chown -R mysql:mysql "$MYSQL_DATA_DIR"
 
 # Start MySQL service
 echo "Starting MySQL service..."
-docker start mysql_container  # Replace with your MySQL Docker container name
+if [ -n "$MYSQL_CONTAINER_NAME" ]; then
+    docker start "$MYSQL_CONTAINER_NAME"
+else
+    systemctl start mysql
+fi
 
 # Cleanup
-rm -rf "$BACKUP_DIR/*"
+rm -rf "$BACKUP_DIR"/*
 echo "Database restoration completed successfully."

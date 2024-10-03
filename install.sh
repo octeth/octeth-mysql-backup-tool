@@ -11,28 +11,10 @@ else
     exit 1
 fi
 
-# Update the package list
-echo "Updating package list..."
-apt update
-
-# Install necessary packages
-echo "Installing required packages..."
-apt install -y curl unzip pigz python3-pip
-
-# Install AWS CLI v2
-if ! command -v aws &> /dev/null; then
-    echo "Installing AWS CLI v2..."
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-    unzip /tmp/awscliv2.zip -d /tmp
-    /tmp/aws/install
-    rm -rf /tmp/aws /tmp/awscliv2.zip
-else
-    echo "AWS CLI v2 is already installed."
-fi
-
-# Install Docker if using Dockerized XtraBackup
+# Install Docker if not installed
 if ! command -v docker &> /dev/null; then
     echo "Installing Docker..."
+    apt update
     apt install -y docker.io
     systemctl enable docker
     systemctl start docker
@@ -44,4 +26,8 @@ fi
 echo "Pulling Percona XtraBackup Docker image..."
 docker pull percona/percona-xtrabackup:2.4
 
-echo "All necessary packages and tools have been installed successfully."
+# Pull AWS CLI Docker image
+echo "Pulling AWS CLI Docker image..."
+docker pull amazon/aws-cli
+
+echo "All necessary Docker images have been pulled successfully."
