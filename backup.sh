@@ -32,13 +32,15 @@ docker run --rm \
     --network=host \
     -v "$DATA_DIR":/var/lib/mysql:ro \
     -v "$BACKUP_DIR":/backup \
-    percona/percona-xtrabackup:2.4 \
-    bash -c "xtrabackup --backup --stream=xbstream --parallel=4 --host=127.0.0.1 --user=$MYSQL_USER --password=$MYSQL_PASSWORD --datadir=/var/lib/mysql | gzip > /backup/$FILENAME"
+    percona-xtrabackup-pigz:2.4 \
+    bash -c "xtrabackup --backup --stream=xbstream --parallel=4 \
+    --host=127.0.0.1 --user=$MYSQL_USER --password=$MYSQL_PASSWORD \
+    --datadir=/var/lib/mysql | pigz -p 4 > /backup/$FILENAME"
 
 echo "Backup was successful."
 
 # Check if AWS credentials are provided
-if [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_DEFAULT_REGION" ]]; then
+if [[ -n "${AWS_ACCESS_KEY_ID-}" && -n "${AWS_SECRET_ACCESS_KEY-}" && -n "${AWS_DEFAULT_REGION-}" ]]; then
     echo "AWS credentials detected. Proceeding with upload..."
 
     # Determine the S3 path based on the date

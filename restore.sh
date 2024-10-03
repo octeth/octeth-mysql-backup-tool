@@ -45,8 +45,8 @@ fi
 echo "Decompressing and extracting the backup..."
 docker run --rm \
     -v "$BACKUP_DIR":/backup \
-    percona/percona-xtrabackup:2.4 \
-    bash -c "cd /backup && gzip -d $FILENAME && xbstream -x < ${FILENAME%.gz}"
+    percona-xtrabackup-pigz:2.4 \
+    bash -c "cd /backup && pigz -dc $FILENAME | xbstream -x"
 
 # Stop MySQL service
 echo "Stopping MySQL service..."
@@ -65,12 +65,12 @@ echo "Restoring the backup..."
 docker run --rm \
     -v "$BACKUP_DIR":/backup \
     -v "$MYSQL_DATA_DIR":/var/lib/mysql \
-    percona/percona-xtrabackup:2.4 \
+    percona-xtrabackup-pigz:2.4 \
     bash -c "xtrabackup --prepare --target-dir=/backup && xtrabackup --copy-back --target-dir=/backup"
 
 # Adjust ownership
 echo "Adjusting file ownership..."
-chown -R "$MYSQL_USER":"$MYSQL_GROUP" "$MYSQL_DATA_DIR"
+chown -R "${MYSQL_USER:-mysql}":"${MYSQL_GROUP:-mysql}" "$MYSQL_DATA_DIR"
 
 # Start MySQL service
 echo "Starting MySQL service..."

@@ -22,12 +22,27 @@ else
     echo "Docker is already installed."
 fi
 
-# Pull Percona XtraBackup Docker image
-echo "Pulling Percona XtraBackup Docker image..."
-docker pull percona/percona-xtrabackup:2.4
+# Build Custom Percona XtraBackup Docker Image with pigz
+echo "Building custom Percona XtraBackup Docker image with pigz..."
+
+# Create a temporary Dockerfile
+cat <<EOF > Dockerfile_xtrabackup_pigz
+# Dockerfile for percona-xtrabackup with pigz
+FROM percona/percona-xtrabackup:2.4
+
+RUN apt-get update && \
+    apt-get install -y pigz && \
+    rm -rf /var/lib/apt/lists/*
+EOF
+
+# Build the Docker image
+docker build -t percona-xtrabackup-pigz:2.4 -f Dockerfile_xtrabackup_pigz .
+
+# Remove the temporary Dockerfile
+rm Dockerfile_xtrabackup_pigz
 
 # Pull AWS CLI Docker image
 echo "Pulling AWS CLI Docker image..."
 docker pull amazon/aws-cli
 
-echo "All necessary Docker images have been pulled successfully."
+echo "All necessary Docker images have been built and pulled successfully."
