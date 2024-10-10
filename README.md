@@ -47,7 +47,7 @@ Before using these scripts, ensure that you have the following installed and con
 ### Clone the Repository
 
 ```bash
-git clone git@github.com:cemhurturk/innodb-backup-tool.git
+git clone git@github.com:octeth/octeth-mysql-backup-tool.git
 cd innodb-backup-tool
 ```
 
