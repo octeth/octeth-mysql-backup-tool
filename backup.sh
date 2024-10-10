@@ -21,8 +21,8 @@ DAYMONTH=$(date +%d)
 mkdir -p "$BACKUP_DIR"
 
 # Check if MySQL credentials are provided
-if [[ -z "${MYSQL_USER-}" || -z "${MYSQL_PASSWORD-}" ]]; then
-    echo "MYSQL_USER and MYSQL_PASSWORD must be set in the .env file."
+if [[ -z "${MYSQL_HOST-}" || -z "${MYSQL_PORT-}" || -z "${MYSQL_USER-}" || -z "${MYSQL_PASSWORD-}" ]]; then
+    echo "MYSQL_HOST, MYSQL_PORT, MYSQL_USER and MYSQL_PASSWORD must be set in the .env file."
     exit 1
 fi
 
@@ -34,7 +34,7 @@ docker run --rm \
     -v "$BACKUP_DIR":/backup \
     percona-xtrabackup-pigz:2.4 \
     bash -c "xtrabackup --backup --stream=xbstream --parallel=4 \
-    --host=127.0.0.1 --user=$MYSQL_USER --password=$MYSQL_PASSWORD \
+    --host=$MYSQL_HOST --port=$MYSQL_PORT --user=$MYSQL_USER --password=$MYSQL_PASSWORD \
     --datadir=/var/lib/mysql | pigz -p 4 > /backup/$FILENAME"
 
 echo "Backup was successful."
