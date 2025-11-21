@@ -1,3 +1,9 @@
+# ⚠️ DEPRECATED - This Repository is No Longer Maintained
+
+> **WARNING:** This repository is deprecated and is no longer being maintained. No further updates, bug fixes, or support will be provided. Please consider using alternative MySQL backup solutions.
+
+---
+
 # MySQL Backup and Restore Scripts using Percona XtraBackup and AWS S3
 
 This repository contains a set of Bash scripts designed to perform backups and restores of a MySQL 5.7 database using Percona XtraBackup. The backups are compressed and stored locally, with the option to upload them to AWS S3 for long-term and short-term storage. The scripts are compatible with Ubuntu 22.04 or newer versions and leverage Docker to run Percona XtraBackup 2.4 and AWS CLI.
