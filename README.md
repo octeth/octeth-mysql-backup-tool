@@ -1,6 +1,6 @@
 # ⚠️ DEPRECATED - This Repository is No Longer Maintained
 
-> **WARNING:** This repository is deprecated and is no longer being maintained. No further updates, bug fixes, or support will be provided. Please consider using alternative MySQL backup solutions.
+> **WARNING:** This repository is deprecated and is no longer being maintained. No further updates, bug fixes, or support will be provided. Please consider using [Octeth's latest free backup tool](https://github.com/octeth/octeth-backup-tools)
 
 ---
 
